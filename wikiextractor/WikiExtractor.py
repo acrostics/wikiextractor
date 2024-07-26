@@ -63,7 +63,7 @@ from io import StringIO
 from multiprocessing import Queue, get_context, cpu_count
 from timeit import default_timer
 
-from .extract import Extractor, ignoreTag, define_template, acceptedNamespaces
+from .extract import Extractor, ignoreTag, define_template
 
 # ===========================================================================
 
@@ -84,6 +84,8 @@ templateNamespace = ''
 # The namespace used for module definitions
 # It is the name associated with namespace key=828 in the siteinfo header.
 moduleNamespace = ''
+
+disallowedNamespaces = []
 
 # ----------------------------------------------------------------------
 # Modules
@@ -290,6 +292,7 @@ def collect_pages(text):
     last_id = ''
     inText = False
     redirect = False
+    skipped = {}
     for line in text:
         if '<' not in line:     # faster than doing re.search()
             if inText:
@@ -324,7 +327,11 @@ def collect_pages(text):
             page.append(line)
         elif tag == '/page':
             colon = title.find(':')
-            if (colon < 0 or (title[:colon] in acceptedNamespaces) and id != last_id and
+            if colon >= 0 and (title[:colon] not in disallowedNamespaces):
+                if title[:colon] not in skipped:
+                   skipped[title[:colon]] = 0
+                skipped[title[:colon]] += 1
+            if (colon < 0 or (title[:colon] not in disallowedNamespaces) and id != last_id and
                     not redirect and not title.startswith(templateNamespace)):
                 yield (id, revid, title, page)
                 last_id = id
@@ -333,6 +340,9 @@ def collect_pages(text):
             page = []
             inText = False
             redirect = False
+    print("The following are namespaces that are not skipped: ")
+    for key in sorted(skipped.keys(), key=lambda k: skipped[k]):
+        print(f"Namespace {key}\t ({skipped[key]} files)")
 
 
 def process_dump(input_file, template_file, out_file, file_size, file_compress,
@@ -426,6 +436,7 @@ def process_dump(input_file, template_file, out_file, file_size, file_compress,
 
     # initialize jobs queue
     jobs_queue = Queue(maxsize=maxsize)
+
 
     # start worker processes
     logging.info("Using %d extract processes.", process_count)
@@ -530,7 +541,7 @@ minFileSize = 200 * 1024
 
 
 def main():
-    global acceptedNamespaces
+    global disallowedNamespaces
     global templateCache
 
     parser = argparse.ArgumentParser(prog=os.path.basename(sys.argv[0]),
@@ -555,7 +566,7 @@ def main():
     groupP.add_argument("-l", "--links", action="store_true",
                         help="preserve links")
     groupP.add_argument("-ns", "--namespaces", default="", metavar="ns1,ns2",
-                        help="accepted namespaces")
+                        help="namespaces to skip")
     groupP.add_argument("--templates",
                         help="use or create file containing templates")
     groupP.add_argument("--no-templates", action="store_true",
@@ -596,7 +607,7 @@ def main():
         return
 
     if args.namespaces:
-        acceptedNamespaces = set(args.namespaces.split(','))
+        disallowedNamespaces = set(args.namespaces.split(','))
 
     FORMAT = '%(levelname)s: %(message)s'
     logging.basicConfig(format=FORMAT)
@@ -638,6 +649,7 @@ def main():
 
     process_dump(input_file, args.templates, output_path, file_size,
                  args.compress, args.processes, args.html_safe, not args.no_templates)
+
 
 if __name__ == '__main__':
     main()

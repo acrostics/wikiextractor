@@ -98,7 +98,7 @@ Processing:
   --html                produce HTML output, subsumes --links
   -l, --links           preserve links
   -ns ns1,ns2, --namespaces ns1,ns2
-			    accepted namespaces
+			    disallowed namespaces
   --templates TEMPLATES
 			    use or create file containing templates
   --no-templates        Do not expand templates
