@@ -340,9 +340,9 @@ def collect_pages(text):
             page = []
             inText = False
             redirect = False
-    print("The following are namespaces that are not skipped: ")
-    for key in sorted(skipped.keys(), key=lambda k: skipped[k]):
-        print(f"Namespace {key}\t ({skipped[key]} files)")
+    # print("The following are namespaces that are not skipped: ")
+    # for key in sorted(skipped.keys(), key=lambda k: skipped[k]):
+    #     print(f"Namespace {key}\t ({skipped[key]} files)")
 
 
 def process_dump(input_file, template_file, out_file, file_size, file_compress,
