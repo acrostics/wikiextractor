@@ -1262,6 +1262,8 @@ class Extractor():
 
         # build a dict of name-values for the parameter values
         params = self.templateParams(params)
+        if title in ["Template:Gap", "Template:Table style"]:
+            return ""
         return "\n".join(params.values())
         """
         # get the template
